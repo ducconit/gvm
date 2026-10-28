@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#070B19"/>
+      <stop offset="50%" stop-color="#0B1528"/>
+      <stop offset="100%" stop-color="#062134"/>
+    </linearGradient>
+    <linearGradient id="cyanGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00ADD8"/>
+      <stop offset="100%" stop-color="#38BDF8"/>
+    </linearGradient>
+    <linearGradient id="badgeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F2942"/>
+      <stop offset="100%" stop-color="#0A192F"/>
+    </linearGradient>
+    <radialGradient id="glowCyan" cx="75%" cy="45%" r="45%">
+      <stop offset="0%" stop-color="#00ADD8" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#00ADD8" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowBlue" cx="20%" cy="25%" r="40%">
+      <stop offset="0%" stop-color="#6366F1" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#6366F1" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1E293B" stroke-width="1" stroke-opacity="0.45"/>
+    </pattern>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1280" height="640" fill="url(#bgGrad)"/>
+  <rect width="1280" height="640" fill="url(#grid)"/>
+  <rect width="1280" height="640" fill="url(#glowCyan)"/>
+  <rect width="1280" height="640" fill="url(#glowBlue)"/>
+
+  <!-- Decorative Top Bar -->
+  <rect x="0" y="0" width="1280" height="6" fill="url(#cyanGrad)"/>
+
+  <!-- Left Column: Brand & Features -->
+  <g transform="translate(68, 88)">
+    <!-- Top Pill -->
+    <rect x="0" y="0" width="335" height="36" rx="18" fill="#0F2942" stroke="#00ADD8" stroke-width="1.5"/>
+    <circle cx="20" cy="18" r="5" fill="#00ADD8"/>
+    <text x="36" y="23" font-family="DejaVu Sans, Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="13" font-weight="700" fill="#7DD3FC" letter-spacing="0.8">GOLANG VERSION MANAGER CLI</text>
+
+    <!-- Giant Logo Mark + Title -->
+    <g transform="translate(0, 62)">
+      <rect x="0" y="0" width="96" height="96" rx="22" fill="url(#cyanGrad)"/>
+      <text x="48" y="68" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" font-size="64" font-weight="800" fill="#061320">g</text>
+      <text x="118" y="54" font-family="DejaVu Sans, Inter, sans-serif" font-size="54" font-weight="800" fill="#F8FAFC">gvm</text>
+      <text x="256" y="54" font-family="DejaVu Sans Mono, monospace" font-size="24" font-weight="700" fill="#00ADD8">/ g</text>
+      <text x="120" y="88" font-family="DejaVu Sans, Inter, sans-serif" font-size="19" font-weight="500" fill="#94A3B8">Fast, Zero-Dependency Go Version Manager</text>
+    </g>
+
+    <!-- Description -->
+    <text x="0" y="206" font-family="DejaVu Sans, Inter, sans-serif" font-size="20" font-weight="400" fill="#CBD5E1">
+      Install, switch, alias, and manage multiple Go toolchains
+    </text>
+    <text x="0" y="236" font-family="DejaVu Sans, Inter, sans-serif" font-size="20" font-weight="400" fill="#CBD5E1">
+      with built-in <tspan fill="#38BDF8" font-weight="700">MCP Server</tspan> &amp; <tspan fill="#38BDF8" font-weight="700">AI Agent Skills</tspan>.
+    </text>
+
+    <!-- Feature Badges -->
+    <g transform="translate(0, 274)">
+      <!-- macOS / Linux / Windows -->
+      <rect x="0" y="0" width="224" height="44" rx="10" fill="url(#badgeGrad)" stroke="#1E3A5F" stroke-width="1.5"/>
+      <circle cx="22" cy="22" r="4.5" fill="#38BDF8"/>
+      <text x="36" y="27" font-family="DejaVu Sans, Inter, sans-serif" font-size="14" font-weight="700" fill="#E2E8F0">macOS · Linux · Windows</text>
+
+      <!-- SHA256 Verified -->
+      <rect x="236" y="0" width="174" height="44" rx="10" fill="url(#badgeGrad)" stroke="#1E3A5F" stroke-width="1.5"/>
+      <circle cx="258" cy="22" r="4.5" fill="#34D399"/>
+      <text x="272" y="27" font-family="DejaVu Sans, Inter, sans-serif" font-size="14" font-weight="700" fill="#34D399">SHA256 Verified</text>
+
+      <!-- MCP + Agent Skills -->
+      <rect x="422" y="0" width="184" height="44" rx="10" fill="url(#badgeGrad)" stroke="#1E3A5F" stroke-width="1.5"/>
+      <circle cx="444" cy="22" r="4.5" fill="#A78BFA"/>
+      <text x="458" y="27" font-family="DejaVu Sans, Inter, sans-serif" font-size="14" font-weight="700" fill="#38BDF8">MCP &amp; AI Skills</text>
+    </g>
+
+    <!-- One-liner Install Box -->
+    <g transform="translate(0, 344)">
+      <rect x="0" y="0" width="606" height="60" rx="12" fill="#050B14" stroke="#00ADD8" stroke-width="1.5" stroke-opacity="0.75"/>
+      <text x="18" y="24" font-family="DejaVu Sans, Inter, sans-serif" font-size="10.5" font-weight="700" fill="#38BDF8" letter-spacing="0.6">ONE-COMMAND INSTALL (MACOS / LINUX / WINDOWS)</text>
+      <text x="18" y="45" font-family="DejaVu Sans Mono, monospace" font-size="11.5" font-weight="700" fill="#64748B">$</text>
+      <text x="32" y="45" font-family="DejaVu Sans Mono, monospace" font-size="11.5" font-weight="700" fill="#E2E8F0">curl -fsSL https://raw.githubusercontent.com/ducconit/gvm/main/install.sh | bash</text>
+    </g>
+
+    <!-- Footer Author Info -->
+    <g transform="translate(0, 444)">
+      <text x="0" y="20" font-family="DejaVu Sans Mono, monospace" font-size="15.5" font-weight="700" fill="#94A3B8">github.com/ducconit/gvm</text>
+      <text x="248" y="20" font-family="DejaVu Sans, sans-serif" font-size="15.5" font-weight="500" fill="#475569">|</text>
+      <text x="268" y="20" font-family="DejaVu Sans, sans-serif" font-size="15.5" font-weight="700" fill="#38BDF8">Author: DNT (@ducconit)</text>
+    </g>
+  </g>
+
+  <!-- Right Column: Terminal Window Mockup -->
+  <g transform="translate(708, 84)">
+    <!-- Terminal Drop Shadow & Frame -->
+    <rect x="6" y="8" width="504" height="476" rx="16" fill="#000000" fill-opacity="0.45"/>
+    <rect x="0" y="0" width="504" height="476" rx="16" fill="#090F1C" stroke="#1E293B" stroke-width="2"/>
+
+    <!-- Terminal Title Bar -->
+    <rect x="0" y="0" width="504" height="44" rx="16" fill="#0F172A"/>
+    <rect x="0" y="28" width="504" height="16" fill="#0F172A"/>
+    <line x1="0" y1="44" x2="504" y2="44" stroke="#1E293B" stroke-width="1.5"/>
+
+    <!-- Window Controls -->
+    <circle cx="24" cy="22" r="6.5" fill="#EF4444"/>
+    <circle cx="46" cy="22" r="6.5" fill="#F59E0B"/>
+    <circle cx="68" cy="22" r="6.5" fill="#10B981"/>
+    <text x="252" y="27" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" font-size="13" font-weight="700" fill="#64748B">zsh — g (gvm)</text>
+
+    <!-- Terminal Content -->
+    <g transform="translate(22, 74)" font-family="DejaVu Sans Mono, monospace" font-size="13.5">
+      <!-- Command 1 -->
+      <text x="0" y="0" fill="#38BDF8" font-weight="700">&gt;</text>
+      <text x="18" y="0" fill="#F8FAFC" font-weight="700">g alias like 1.27</text>
+      <text x="0" y="24" fill="#94A3B8">Alias "like" -&gt; "1.27" saved</text>
+
+      <!-- Command 2 -->
+      <text x="0" y="62" fill="#38BDF8" font-weight="700">&gt;</text>
+      <text x="18" y="62" fill="#F8FAFC" font-weight="700">g i like</text>
+      <text x="0" y="86" fill="#64748B">Downloading go1.27.3.linux-amd64.tar.gz... 100%</text>
+      <text x="0" y="110" fill="#34D399" font-weight="700">[OK] Installed Go 1.27.3 (active default)</text>
+
+      <!-- Command 3 -->
+      <text x="0" y="148" fill="#38BDF8" font-weight="700">&gt;</text>
+      <text x="18" y="148" fill="#F8FAFC" font-weight="700">g ls</text>
+      <text x="0" y="172" fill="#94A3B8">  1.26.4  [alias: -]          ~/.gvm/versions/1.26.4</text>
+      <text x="0" y="196" fill="#38BDF8" font-weight="700">* 1.27.3  [alias: like-&gt;1.27] ~/.gvm/versions/1.27.3</text>
+
+      <!-- Command 4 -->
+      <text x="0" y="234" fill="#38BDF8" font-weight="700">&gt;</text>
+      <text x="18" y="234" fill="#F8FAFC" font-weight="700">g use 1.27</text>
+      <text x="0" y="258" fill="#34D399">Now using Go 1.27.3 (~/.gvm/versions/1.27.3)</text>
+
+      <!-- Command 5 -->
+      <text x="0" y="296" fill="#38BDF8" font-weight="700">&gt;</text>
+      <text x="18" y="296" fill="#F8FAFC" font-weight="700">g skills install --ide antigravity</text>
+      <text x="0" y="320" fill="#34D399">[OK] Installed skill to ~/.gemini/config/skills/g</text>
+
+      <!-- Command 6 -->
+      <text x="0" y="358" fill="#38BDF8" font-weight="700">&gt;</text>
+      <text x="18" y="358" fill="#F8FAFC" font-weight="700">g mcp</text>
+      <text x="0" y="382" fill="#A78BFA">[MCP] JSON-RPC 2.0 Server ready on stdio</text>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,62 @@
+name: "🐛 Bug Report"
+description: "Report a bug or unexpected behavior in g (gvm) CLI / Báo lỗi khi sử dụng g (gvm)"
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report! / Cảm ơn bạn đã gửi báo lỗi cho **gvm (`g`)**!
+
+  - type: textarea
+    id: description
+    attributes:
+      label: "Bug Description / Mô tả lỗi"
+      description: "A clear and concise description of what the bug is."
+      placeholder: "Describe what happened..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: "Steps to Reproduce / Các bước tái hiện"
+      description: "Exact commands or steps to reproduce the issue."
+      placeholder: |
+        1. Run `g alias like 1.27`
+        2. Run `g i like`
+        3. See error...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: "Expected Behavior / Kết quả mong đợi"
+      description: "What did you expect to happen?"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: "Operating System / Hệ điều hành"
+      options:
+        - "macOS (Apple Silicon - arm64)"
+        - "macOS (Intel - amd64)"
+        - "Linux (amd64 / x86_64)"
+        - "Linux (arm64 / aarch64)"
+        - "Windows (amd64)"
+        - "Windows (arm64)"
+        - "Other"
+    validations:
+      required: true
+
+  - type: textarea
+    id: env
+    attributes:
+      label: "Output of `g -v` and `g env`"
+      description: "Paste the output of `g -v` and `g env` here."
+      render: shell
+    validations:
+      required: false
