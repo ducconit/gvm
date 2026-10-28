@@ -75,12 +75,17 @@ func (c EnvConfig) VersionDir(v string) string {
 	return filepath.Join(c.VersionsDir(), v)
 }
 
-// CurrentDir returns $GVM_HOME/current (symlink/junction to active Go root).
+// CurrentDir returns $GVM_HOME/go (the fixed native-style GOROOT symlink/junction pointing to the active Go version).
 func (c EnvConfig) CurrentDir() string {
+	return filepath.Join(c.GVMHome, "go")
+}
+
+// LegacyCurrentDir returns $GVM_HOME/current (maintained alongside $GVM_HOME/go for backward compatibility).
+func (c EnvConfig) LegacyCurrentDir() string {
 	return filepath.Join(c.GVMHome, "current")
 }
 
-// CurrentBinDir returns $GVM_HOME/current/bin.
+// CurrentBinDir returns $GVM_HOME/go/bin.
 func (c EnvConfig) CurrentBinDir() string {
 	return filepath.Join(c.CurrentDir(), "bin")
 }

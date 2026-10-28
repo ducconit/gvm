@@ -72,11 +72,11 @@ mv "$TMP_BIN" "${INSTALL_DIR}/${BIN_NAME}"
 
 ok "Installed '${BIN_NAME}' binary to ${INSTALL_DIR}/${BIN_NAME}"
 
-# 3. Configure Shell Profile (Bash / Zsh / Fish)
+# 3. Configure Shell Profile (Bash / Zsh / Profile) with fixed GOROOT="$GVM_HOME/go"
 EXPORT_BLOCK='
 # >>> gvm (g) initialize >>>
 export GVM_HOME="$HOME/.gvm"
-export GOROOT="$GVM_HOME/current"
+export GOROOT="$GVM_HOME/go"
 export GOPATH="${GOPATH:-$HOME/go}"
 export PATH="$HOME/.local/bin:$GOROOT/bin:$GOPATH/bin:$PATH"
 # <<< gvm (g) initialize <<<'

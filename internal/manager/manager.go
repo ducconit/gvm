@@ -112,13 +112,16 @@ func (m *Manager) Install(ctx context.Context, versionSpec string) (*store.Insta
 		fmt.Fprintf(m.out, "Go %s is already installed at %s\n", targetVersion, targetDir)
 	}
 
-	// Activate automatically if no active version is set yet
+	// Activate automatically if no active version is set yet (first installed version becomes default)
 	active, _ := m.store.ActiveVersion()
 	if active == "" {
 		if err := m.store.SetActiveVersion(targetVersion); err != nil {
 			return nil, err
 		}
 		active = targetVersion
+	}
+	if updatedFiles, _ := platform.EnsureShellEnvConfigured(cfg); len(updatedFiles) > 0 {
+		fmt.Fprintf(m.out, "Added GOROOT (%s) and PATH to: %v\n", cfg.CurrentDir(), updatedFiles)
 	}
 
 	return &store.InstalledVersion{
@@ -137,9 +140,13 @@ func (m *Manager) Use(ctx context.Context, versionSpec string) (*store.Installed
 	if err := m.store.SetActiveVersion(resolved); err != nil {
 		return nil, err
 	}
+	cfg := m.store.Config()
+	if updatedFiles, _ := platform.EnsureShellEnvConfigured(cfg); len(updatedFiles) > 0 {
+		fmt.Fprintf(m.out, "Added GOROOT (%s) and PATH to: %v\n", cfg.CurrentDir(), updatedFiles)
+	}
 	return &store.InstalledVersion{
 		Version: resolved,
-		Path:    m.store.Config().VersionDir(resolved),
+		Path:    cfg.VersionDir(resolved),
 		Active:  true,
 	}, nil
 }

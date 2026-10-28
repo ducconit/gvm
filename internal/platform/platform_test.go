@@ -170,18 +170,18 @@ func TestSwitchCurrentLink_And_FormatEnv(t *testing.T) {
 	if err := SwitchCurrentLink(gvmHome, v1Dir); err != nil {
 		t.Fatalf("SwitchCurrentLink v1: %v", err)
 	}
-	resolved, err := filepath.EvalSymlinks(filepath.Join(gvmHome, "current"))
+	resolved, err := filepath.EvalSymlinks(filepath.Join(gvmHome, "go"))
 	if err != nil || resolved != v1Dir {
-		t.Fatalf("expected current -> %s, got %s (err=%v)", v1Dir, resolved, err)
+		t.Fatalf("expected go -> %s, got %s (err=%v)", v1Dir, resolved, err)
 	}
 
 	// Switch to v2 atomically
 	if err := SwitchCurrentLink(gvmHome, v2Dir); err != nil {
 		t.Fatalf("SwitchCurrentLink v2: %v", err)
 	}
-	resolved2, err := filepath.EvalSymlinks(filepath.Join(gvmHome, "current"))
+	resolved2, err := filepath.EvalSymlinks(filepath.Join(gvmHome, "go"))
 	if err != nil || resolved2 != v2Dir {
-		t.Fatalf("expected current -> %s, got %s (err=%v)", v2Dir, resolved2, err)
+		t.Fatalf("expected go -> %s, got %s (err=%v)", v2Dir, resolved2, err)
 	}
 
 	if err := RemoveCurrentLink(gvmHome); err != nil {
@@ -189,7 +189,7 @@ func TestSwitchCurrentLink_And_FormatEnv(t *testing.T) {
 	}
 
 	cfg := EnvConfig{
-		HomeDir: "/home/tester",
+		HomeDir: gvmHome,
 		GVMHome: gvmHome,
 		GOOS:    "linux",
 		GOARCH:  "amd64",
@@ -197,5 +197,15 @@ func TestSwitchCurrentLink_And_FormatEnv(t *testing.T) {
 	out := FormatEnvExport(cfg, "1.27.3")
 	if !strings.Contains(out, "ACTIVE_VERSION=1.27.3") || !strings.Contains(out, "export GOROOT=") {
 		t.Fatalf("unexpected FormatEnvExport output:\n%s", out)
+	}
+
+	// Verify EnsureShellEnvConfigured adds GOROOT and PATH to .bashrc if missing, and is idempotent on second call
+	updated, err := EnsureShellEnvConfigured(cfg)
+	if err != nil || len(updated) != 1 {
+		t.Fatalf("EnsureShellEnvConfigured first call: updated=%v, err=%v", updated, err)
+	}
+	updatedAgain, err := EnsureShellEnvConfigured(cfg)
+	if err != nil || len(updatedAgain) != 0 {
+		t.Fatalf("EnsureShellEnvConfigured second call should be idempotent: updated=%v, err=%v", updatedAgain, err)
 	}
 }

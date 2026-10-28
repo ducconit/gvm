@@ -33,21 +33,21 @@ description: >-
 
 - **`GVM_HOME`**: Defaults to `~/.gvm` (`%USERPROFILE%\.gvm` on Windows).
 - **Installed Versions**: Stored in `$GVM_HOME/versions/<version>` (e.g., `~/.gvm/versions/1.27.3`).
-- **Active Toolchain (`GOROOT`)**: Linked at `$GVM_HOME/current` (with binaries at `$GVM_HOME/current/bin`).
+- **Active Toolchain (`GOROOT`)**: Fixed symlink at `$GVM_HOME/go` (with binaries at `$GVM_HOME/go/bin` and auto-linked into `~/.local/bin/go`).
 - **Aliases File**: Stored in `$GVM_HOME/aliases.json`.
 
 ### Shell `PATH` Integration
-Ensure `$GVM_HOME/current/bin` and `$GOPATH/bin` are in `PATH`:
+`g` automatically configures `GOROOT` and `PATH` in `~/.bashrc`, `~/.zshrc`, `~/.profile` (or Windows User PATH) if not already present, and symlinks `go`/`gofmt` into `~/.local/bin` so Go works immediately after `g install` or `g use`:
 ```bash
 # macOS / Linux (~/.bashrc or ~/.zshrc)
-export GOROOT="$HOME/.gvm/current"
+export GOROOT="$HOME/.gvm/go"
 export GOPATH="$HOME/go"
-export PATH="$GOROOT/bin:$GOPATH/bin:$PATH"
+export PATH="$HOME/.local/bin:$GOROOT/bin:$GOPATH/bin:$PATH"
 ```
 
 ```powershell
 # Windows PowerShell ($PROFILE)
-$env:GOROOT = "$HOME\.gvm\current"
+$env:GOROOT = "$HOME\.gvm\go"
 $env:GOPATH = "$HOME\go"
 $env:PATH = "$env:GOROOT\bin;$env:GOPATH\bin;$env:PATH"
 ```

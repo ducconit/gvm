@@ -155,12 +155,14 @@ func (s *Store) ActiveVersion() (string, error) {
 		}
 	}
 
-	// 2. Fallback to inspecting $GVM_HOME/current symlink target
-	target, err := filepath.EvalSymlinks(s.cfg.CurrentDir())
-	if err == nil && target != "" {
-		base := goversion.Normalize(filepath.Base(target))
-		if base != "" && s.IsInstalled(base) {
-			return base, nil
+	// 2. Fallback to inspecting $GVM_HOME/go (or legacy $GVM_HOME/current) symlink target
+	for _, linkDir := range []string{s.cfg.CurrentDir(), s.cfg.LegacyCurrentDir()} {
+		target, err := filepath.EvalSymlinks(linkDir)
+		if err == nil && target != "" {
+			base := goversion.Normalize(filepath.Base(target))
+			if base != "" && s.IsInstalled(base) {
+				return base, nil
+			}
 		}
 	}
 	return "", nil

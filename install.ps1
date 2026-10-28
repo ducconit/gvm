@@ -12,7 +12,7 @@ $ErrorActionPreference = "Stop"
 $Repo = "ducconit/gvm"
 $GvmHome = if ($env:GVM_HOME) { $env:GVM_HOME } else { Join-Path $HOME ".gvm" }
 $BinDir  = Join-Path $GvmHome "bin"
-$GoRoot  = Join-Path $GvmHome "current"
+$GoRoot  = Join-Path $GvmHome "go"
 $GoBin   = Join-Path $GoRoot "bin"
 $Version = if ($env:GVM_VERSION) { $env:GVM_VERSION } else { "latest" }
 

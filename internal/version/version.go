@@ -4,7 +4,7 @@ import "runtime"
 
 var (
 	// Version is the semantic version of the g CLI. Overridden via -ldflags "-X github.com/ducconit/gvm/internal/version.Version=..."
-	Version = "1.0.0"
+	Version = "1.0.1"
 	// Commit is the git commit hash when built.
 	Commit = "dev"
 	// BuildDate is the RFC3339 build timestamp.
