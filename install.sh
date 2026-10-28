@@ -100,7 +100,7 @@ fi
 
 printf "\n"
 ok "g (gvm) installation complete!"
-printf "   Run the following command or restart your terminal:\n\n"
-printf "     \033[1;36mexport PATH=\"%s:%s/current/bin:\$HOME/go/bin:\$PATH\"\033[0m\n" "$INSTALL_DIR" "$GVM_HOME"
+printf "   Run the following commands in your current shell (or restart your terminal):\n\n"
+printf "     \033[1;36msource ~/.bashrc\033[0m   # or: source ~/.zshrc\n"
 printf "     \033[1;36mg -v\033[0m\n"
 printf "     \033[1;36mg i latest\033[0m\n\n"
