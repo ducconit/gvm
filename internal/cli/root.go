@@ -57,6 +57,7 @@ func NewDefaultDependencies(in io.Reader, out, errOut io.Writer) (*Dependencies,
 // NewRootCmd constructs the root `g` Cobra command and all subcommands.
 func NewRootCmd(deps *Dependencies) *cobra.Command {
 	var showVersion bool
+	var mirrorURL string
 
 	rootCmd := &cobra.Command{
 		Use:   "g",
@@ -64,11 +65,15 @@ func NewRootCmd(deps *Dependencies) *cobra.Command {
 		Long: `g is a fast, cross-platform Golang version manager for darwin (macOS), linux, and windows.
 
 Common commands:
-  g install <version> | g i <version>   Install a Go version or alias
-  g alias <name> <version>              Set a favorite version alias (e.g. g alias like 1.27)
-  g use <version>                       Set default Go version (by version or alias)
+  g install [version] | g i [version]   Install a Go version, alias, or auto-detect from go.mod/.go-version
+  g use [version]                       Set default Go version (or auto-detect from go.mod/.go-version)
+  g alias [name] [version]              List aliases or set a favorite alias (e.g. g alias like 1.27)
+  g unalias <name>                      Remove a configured version alias
+  g exec <version> -- <cmd> [args...]   Run a command with a specific Go version without switching default
   g ls [-r|--remote]                    List installed or official remote Go versions
   g uninstall [version] [--all]         Uninstall a Go version, all unused versions, or g itself
+  g clean [--cache] [--modcache]        Clean temporary downloads and Go build/module caches
+  g doctor                              Diagnose GVM_HOME, GOROOT symlink, PATH, and network health
   g update [version]                    Self-update g CLI to latest or specified version
   g -v | g version                      Show g CLI version and active Go version
   g env                                 Show active Go environment variables
@@ -76,6 +81,13 @@ Common commands:
   g skills install [--path] [--ide]     Install AI agent skills`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			if mirrorURL != "" {
+				if hc, ok := deps.Remote.(*goversion.HTTPClient); ok {
+					hc.SetMirror(mirrorURL)
+				}
+			}
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if showVersion {
 				return printVersionInfo(deps)
@@ -89,15 +101,20 @@ Common commands:
 	rootCmd.SetErr(deps.ErrOut)
 
 	rootCmd.Flags().BoolVarP(&showVersion, "version", "v", false, "Show g CLI version and active Go version")
+	rootCmd.PersistentFlags().StringVar(&mirrorURL, "mirror", "", "Custom Go download mirror base URL (or set GVM_MIRROR)")
 
 	rootCmd.AddCommand(
 		newInstallCmd(deps),
 		newAliasCmd(deps),
+		newUnaliasCmd(deps),
 		newUpdateCmd(deps),
 		newVersionCmd(deps),
 		newLsCmd(deps),
 		newUninstallCmd(deps),
 		newUseCmd(deps),
+		newExecCmd(deps),
+		newCleanCmd(deps),
+		newDoctorCmd(deps),
 		newEnvCmd(deps),
 		newMcpCmd(deps),
 		newSkillsCmd(deps),
@@ -121,7 +138,6 @@ func printVersionInfo(deps *Dependencies) error {
 	if active != "" {
 		activeDir := cfg.VersionDir(active)
 		goBin := cfg.GoBinaryPath(activeDir)
-		// Also try executing `go version` if runnable on current host
 		if out, err := exec.Command(goBin, "version").Output(); err == nil {
 			fmt.Fprintf(deps.Out, "Active Go: %s (%s)\n", strings.TrimSpace(string(out)), activeDir)
 			return nil
@@ -130,7 +146,6 @@ func printVersionInfo(deps *Dependencies) error {
 		return nil
 	}
 
-	// Fallback: check if a system `go` binary is in PATH
 	if out, err := exec.Command("go", "version").Output(); err == nil {
 		fmt.Fprintf(deps.Out, "Active Go: (none managed by g; system: %s)\n", strings.TrimSpace(string(out)))
 		return nil

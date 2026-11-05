@@ -58,7 +58,10 @@ func NewHTTPClient() *HTTPClient {
 	if apiURL == "" {
 		apiURL = DefaultReleasesAPIURL
 	}
-	dlBase := strings.TrimSpace(os.Getenv("GVM_GO_DL_BASE_URL"))
+	dlBase := strings.TrimSpace(os.Getenv("GVM_MIRROR"))
+	if dlBase == "" {
+		dlBase = strings.TrimSpace(os.Getenv("GVM_GO_DL_BASE_URL"))
+	}
 	if dlBase == "" {
 		dlBase = DefaultDownloadBaseURL
 	}
@@ -77,6 +80,14 @@ func NewHTTPClient() *HTTPClient {
 		},
 		ReleasesAPIURL:  apiURL,
 		DownloadBaseURL: dlBase,
+	}
+}
+
+// SetMirror updates the download mirror base URL when a non-empty mirror URL is provided.
+func (c *HTTPClient) SetMirror(mirrorURL string) {
+	m := strings.TrimSpace(mirrorURL)
+	if m != "" {
+		c.DownloadBaseURL = m
 	}
 }
 

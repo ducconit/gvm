@@ -64,21 +64,25 @@ go install github.com/ducconit/gvm/cmd/g@latest
 
 | Command | Mô tả (Tiếng Việt) | Description (English) |
 | :--- | :--- | :--- |
-| `g install <version>`<br>`g i <version>` | Cài phiên bản Golang chỉ định (`1.27.3`, `1.27`, `latest` hoặc tên `alias`). | Install a specified Go version, minor series prefix, or alias. |
-| `g alias <name> <version>` | Đặt alias ưa thích (VD: `g alias like 1.27`: `like` là tên alias, `1.27` là phiên bản). | Create or update a favorite version alias. |
+| `g install [version]`<br>`g i [version]` | Cài phiên bản Golang chỉ định (`1.27.3`, `1.27`, `latest`, `alias`), hoặc **bỏ trống để tự đọc từ `go.mod` / `.go-version`**. | Install a specified Go version, prefix, alias, or auto-detect from `go.mod`/`.go-version`. |
+| `g use [version]` | Chuyển phiên bản Golang mặc định (theo version, alias, hoặc **bỏ trống để tự đọc và cài từ `go.mod` / `.go-version`**). | Switch the default Go version (or auto-detect from `go.mod`/`.go-version`). |
+| `g alias [name] [version]` | Xem danh sách alias (`g alias`) hoặc đặt alias ưa thích (VD: `g alias like 1.27`). | List all aliases (`g alias`) or create/update a favorite version alias. |
+| `g unalias <name>` | Xoá một alias đã tạo (VD: `g unalias like`). | Remove a configured version alias. |
+| `g exec <version> -- <cmd>`<br>`g run <version> -- <cmd>` | Chạy một lệnh bất kỳ (`go test ./...`, `go build`) với phiên bản Go chỉ định mà **không đổi** phiên bản mặc định. | Execute a command with a specific Go version without changing the global default. |
+| `g doctor` | Kiểm tra sức khoẻ môi trường (`GVM_HOME`, `GOROOT` symlink `~/.gvm/go`, thứ tự `PATH`, kết nối `go.dev/dl`). | Diagnose `GVM_HOME`, `GOROOT` symlink, `PATH` ordering, and network reachability. |
+| `g clean [--cache] [--modcache]` | Dọn dẹp thư mục tạm `~/.gvm/tmp` và tuỳ chọn chạy `go clean -cache` / `-modcache`. | Clean temporary downloads and optionally Go build/module caches. |
 | `g update` | Tự động cập nhật CLI `g` lên phiên bản mới nhất từ GitHub Releases. | Self-update the `g` CLI to the latest release. |
-| `g update <version>` | Cập nhật CLI `g` thành một phiên bản chỉ định (VD: `g update 1.0.0`). | Self-update the `g` CLI to a specific release version. |
+| `g update <version>` | Cập nhật CLI `g` thành một phiên bản chỉ định (VD: `g update 1.1.0`). | Self-update the `g` CLI to a specific release version. |
 | `g -v` / `g version` | Xem thông tin phiên bản CLI `g` và phiên bản Go đang được sử dụng. | Display `g` CLI version and active Go toolchain version. |
 | `g ls` | Liệt kê danh sách phiên bản Go đã cài kèm trạng thái active (`*`), alias và thư mục chứa. | List locally installed Go versions with aliases and paths. |
 | `g ls -r`<br>`g ls --remote` | Xem danh sách phiên bản Go đang phát hành chính thức từ `go.dev/dl` (thêm `--all` để xem cả bản RC/beta). | List official remote Go releases from `go.dev/dl`. |
 | `g uninstall <version>` | Xoá phiên bản Golang chỉ định (theo version cụ thể hoặc alias). | Uninstall a specified Go version or alias. |
 | `g uninstall --all` | Xoá tất cả phiên bản Go đã cài **trừ** phiên bản đang được sử dụng. | Uninstall all installed Go versions **except** the currently active one. |
 | `g uninstall` | Xoá chính CLI `g` và dọn sạch thư mục `$GVM_HOME`. | Self-uninstall the `g` CLI binary and `$GVM_HOME` directory. |
-| `g use <version>` | Chỉ định 1 phiên bản Golang làm mặc định (theo version cụ thể hoặc alias). | Switch the default Go version by version or alias. |
 | `g env` | Hiển thị các biến môi trường đang sử dụng (`GVM_HOME`, `GOROOT`, `GOPATH`, `GOBIN`, `PATH`). | Show active Go environment variables and shell export snippet. |
 | `g mcp` | Chạy Model Context Protocol (MCP) server qua `stdio`. | Start the built-in MCP server over `stdio`. |
 | `g skills install` | Cài đặt Skills cho AI Agent (`--path` chỉ định thư mục, mặc định `~/.agents/skills`, hoặc `--ide`). | Install AI agent skills (`--path` or `--ide antigravity`). |
-| `g -h` / `g --help`<br>`g help` | Hiển thị hướng dẫn trợ giúp chi tiết. | Show CLI help and subcommand usage. |
+| `g -h` / `g --help`<br>`g help` | Hiển thị hướng dẫn trợ giúp chi tiết (hỗ trợ `--mirror` hoặc `GVM_MIRROR`). | Show CLI help and subcommand usage. |
 
 ---
 
@@ -160,7 +164,11 @@ g skills install --path /custom/path/to/skills
 - `g_install`: Cài đặt phiên bản Go mới hoặc qua alias.
 - `g_use`: Chuyển đổi phiên bản Go mặc định.
 - `g_alias`: Tạo hoặc cập nhật alias.
+- `g_unalias`: Xoá alias đã tạo.
 - `g_uninstall_version`: Xoá phiên bản chỉ định hoặc xoá tất cả trừ phiên bản đang dùng (`all: true`).
+- `g_detect_project_version`: Tự động phát hiện phiên bản Go của dự án từ `.go-version`, `go.work`, hoặc `go.mod`.
+- `g_doctor`: Chạy chẩn đoán sức khoẻ môi trường `GVM_HOME`, `GOROOT` symlink, `PATH` và kết nối mạng.
+- `g_clean`: Dọn dẹp file tạm trong `GVM_HOME/tmp` và bộ nhớ đệm Go (`cache`, `modcache`).
 
 ---
 

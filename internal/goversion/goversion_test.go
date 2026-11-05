@@ -154,3 +154,40 @@ func TestHTTPClient_FetchAndDownloadWithChecksum(t *testing.T) {
 		t.Fatalf("expected corrupt file not to exist at %s", badDest)
 	}
 }
+
+func TestDetectProjectVersion(t *testing.T) {
+	root := t.TempDir()
+	subDir := filepath.Join(root, "cmd", "api")
+	if err := os.MkdirAll(subDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	// 1. go.mod with go directive
+	goModPath := filepath.Join(root, "go.mod")
+	if err := os.WriteFile(goModPath, []byte("module example.com/app\n\ngo 1.26.4\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	pv, err := DetectProjectVersion(subDir)
+	if err != nil || pv.Version != "1.26.4" {
+		t.Fatalf("DetectProjectVersion(go.mod) = %+v, err=%v", pv, err)
+	}
+
+	// 2. go.mod with toolchain directive takes precedence over go directive
+	if err := os.WriteFile(goModPath, []byte("module example.com/app\n\ngo 1.26.0\ntoolchain go1.27.3\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	pv2, err := DetectProjectVersion(subDir)
+	if err != nil || pv2.Version != "1.27.3" {
+		t.Fatalf("DetectProjectVersion(toolchain) = %+v, err=%v", pv2, err)
+	}
+
+	// 3. .go-version takes highest precedence
+	dotGoVer := filepath.Join(root, ".go-version")
+	if err := os.WriteFile(dotGoVer, []byte("go1.25.2 # pinned\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	pv3, err := DetectProjectVersion(subDir)
+	if err != nil || pv3.Version != "1.25.2" {
+		t.Fatalf("DetectProjectVersion(.go-version) = %+v, err=%v", pv3, err)
+	}
+}

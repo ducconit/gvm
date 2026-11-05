@@ -14,15 +14,19 @@ description: >-
 
 | Command | Description | Examples |
 | :--- | :--- | :--- |
-| `g install <version>` / `g i <version>` | Install a specific Go version, minor series prefix, or alias | `g i 1.27`, `g install 1.27.3`, `g i latest`, `g i like` |
-| `g alias <name> <version>` | Create or update a favorite version alias | `g alias like 1.27`, `g alias prod 1.26.4` |
-| `g use <version>` | Set the active default Go version (by version, prefix, or alias) | `g use 1.27`, `g use like`, `g use 1.26.4` |
+| `g install [version]` / `g i [version]` | Install a specific Go version, minor series prefix, alias, or auto-detect from `go.mod`/`.go-version` | `g i`, `g i 1.27`, `g install 1.27.3`, `g i latest`, `g i like` |
+| `g use [version]` | Set the active default Go version (or auto-detect from `go.mod`/`.go-version` when omitted) | `g use`, `g use 1.27`, `g use like`, `g use 1.26.4` |
+| `g alias [name] [version]` | List configured aliases (0 args) or create/update a favorite version alias | `g alias`, `g alias like 1.27`, `g alias prod 1.26.4` |
+| `g unalias <name>` | Remove a configured version alias | `g unalias like` |
+| `g exec <version> -- <cmd> [args...]` | Execute a command using a specific Go version without changing the global default | `g exec 1.26 -- go test ./...`, `g run like -- go version` |
 | `g ls` | List locally installed Go versions, aliases, active marker, and paths | `g ls` |
 | `g ls -r` / `g ls --remote` | List official Go releases available for the current OS/Arch | `g ls -r`, `g ls --remote --all` |
 | `g uninstall <version>` | Remove an installed Go version (or alias target) | `g uninstall 1.26.4`, `g uninstall like` |
 | `g uninstall --all` | Remove all installed Go versions **except** the currently active version | `g uninstall --all` |
-| `g uninstall` | Self-uninstall the `g` CLI and `$GVM_HOME` directory | `g uninstall -y` |
-| `g update [version]` | Self-update `g` CLI to latest or a specific release version | `g update`, `g update 1.2.0` |
+| `g uninstall` | Self-uninstall the `g` CLI and `$GVM_HOME` directory | `g uninstall` |
+| `g clean [--cache] [--modcache]` | Clean temporary files in `$GVM_HOME/tmp` and optionally Go build/module caches | `g clean`, `g clean --cache --modcache` |
+| `g doctor` | Run health diagnostics on `GVM_HOME`, `GOROOT` symlink, `PATH`, and release feed | `g doctor` |
+| `g update [version]` | Self-update `g` CLI to latest or a specific release version | `g update`, `g update 1.1.0` |
 | `g -v` / `g version` | Display `g` CLI version and currently active Go toolchain info | `g -v`, `g version` |
 | `g env` | Show active Go environment variables (`GVM_HOME`, `GOROOT`, `GOPATH`, `PATH`) | `g env` |
 | `g mcp` | Start the built-in Model Context Protocol (MCP) server over `stdio` | `g mcp` |
@@ -73,4 +77,8 @@ Exposed MCP tools:
 - `g_install`: Install a Go version or alias.
 - `g_use`: Switch the active Go version.
 - `g_alias`: Set a version alias.
+- `g_unalias`: Remove a version alias.
 - `g_uninstall_version`: Uninstall a specific Go version or all except active (`all: true`).
+- `g_detect_project_version`: Auto-detect project Go version from `.go-version`, `go.work`, or `go.mod`.
+- `g_doctor`: Run diagnostic checks on `GVM_HOME`, `GOROOT` symlink, `PATH`, and release feed.
+- `g_clean`: Clean `$GVM_HOME/tmp` and optionally `go clean -cache` / `-modcache`.

@@ -124,6 +124,27 @@ func (s *Store) SetAlias(name, targetSpec string) error {
 	return s.writeAliasesLocked(aliases)
 }
 
+// RemoveAlias removes a named alias from $GVM_HOME/aliases.json.
+func (s *Store) RemoveAlias(name string) error {
+	aliasName := strings.TrimSpace(strings.ToLower(name))
+	if aliasName == "" {
+		return errors.New("alias name cannot be empty")
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	aliases, err := s.readAliasesLocked()
+	if err != nil {
+		return err
+	}
+	if _, exists := aliases[aliasName]; !exists {
+		return fmt.Errorf("alias %q does not exist", name)
+	}
+	delete(aliases, aliasName)
+	return s.writeAliasesLocked(aliases)
+}
+
 // ResolveAlias expands a custom alias if one exists (up to 4 hops to avoid cycles).
 // If query is not a registered alias, it returns goversion.Normalize(query).
 func (s *Store) ResolveAlias(query string) (string, error) {
