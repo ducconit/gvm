@@ -182,10 +182,22 @@ func TestCLI_AllCommandsEndToEnd(t *testing.T) {
 		}
 	}
 
-	// 2. Alias (`g alias like 1.27`)
+	// 2. Alias (`g alias like 1.27`, `g alias`, `g unalias`)
 	out, err := runCLI("", "alias", "like", "1.27")
 	if err != nil || !strings.Contains(out, `"like" -> "1.27"`) {
 		t.Fatalf("g alias like 1.27 failed: err=%v, out=%s", err, out)
+	}
+	out, err = runCLI("", "alias", "temp", "1.26")
+	if err != nil {
+		t.Fatalf("g alias temp 1.26 failed: %v", err)
+	}
+	out, err = runCLI("", "alias")
+	if err != nil || !strings.Contains(out, "like") || !strings.Contains(out, "temp") {
+		t.Fatalf("g alias list failed: err=%v, out=%s", err, out)
+	}
+	out, err = runCLI("", "unalias", "temp")
+	if err != nil || !strings.Contains(out, `Removed alias "temp"`) {
+		t.Fatalf("g unalias temp failed: err=%v, out=%s", err, out)
 	}
 
 	// 3. Install via `g install <version>` and `g i <version>`
@@ -232,10 +244,22 @@ func TestCLI_AllCommandsEndToEnd(t *testing.T) {
 		t.Fatalf("g use like failed: err=%v, out=%s", err, out)
 	}
 
-	// 7. Env (`g env`)
+	// 7. Env (`g env`), Doctor (`g doctor`), Clean (`g clean`), and Exec (`g exec`)
 	out, err = runCLI("", "env")
 	if err != nil || !strings.Contains(out, "ACTIVE_VERSION=1.27.3") || !strings.Contains(out, "GOROOT=") {
 		t.Fatalf("g env failed: err=%v, out=%s", err, out)
+	}
+	out, err = runCLI("", "doctor")
+	if err != nil || !strings.Contains(out, "GVM_HOME:") || !strings.Contains(out, "Official Release Feed:") {
+		t.Fatalf("g doctor failed: err=%v, out=%s", err, out)
+	}
+	out, err = runCLI("", "exec", "1.26.4", "--", "go", "version")
+	if err != nil || !strings.Contains(out, "go1.26.4") {
+		t.Fatalf("g exec 1.26.4 -- go version failed: err=%v, out=%s", err, out)
+	}
+	out, err = runCLI("", "clean")
+	if err != nil || !strings.Contains(out, "Cleaned temporary files") {
+		t.Fatalf("g clean failed: err=%v, out=%s", err, out)
 	}
 
 	// 8. Skills install (`g skills install`, `g skills install --ide antigravity`, `g skills install --path ...`)

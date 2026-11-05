@@ -9,6 +9,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/ducconit/gvm/internal/goversion"
 	"github.com/ducconit/gvm/internal/manager"
 	"github.com/ducconit/gvm/internal/platform"
 	"github.com/ducconit/gvm/internal/version"
@@ -280,6 +281,58 @@ func (s *Server) toolsList() []toolDefinition {
 				},
 			},
 		},
+		{
+			Name:        "g_unalias",
+			Description: "Remove an existing custom version alias.",
+			InputSchema: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"name": map[string]any{
+						"type":        "string",
+						"description": "Alias name to remove.",
+					},
+				},
+				"required": []string{"name"},
+			},
+		},
+		{
+			Name:        "g_detect_project_version",
+			Description: "Auto-detect the required Go version from .go-version, go.work, or go.mod in the given directory (or current working directory).",
+			InputSchema: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"dir": map[string]any{
+						"type":        "string",
+						"description": "Optional project directory path to inspect.",
+					},
+				},
+			},
+		},
+		{
+			Name:        "g_doctor",
+			Description: "Run diagnostic health checks on GVM_HOME, GOROOT symlink, PATH resolution, and official release feed.",
+			InputSchema: map[string]any{
+				"type":       "object",
+				"properties": map[string]any{},
+			},
+		},
+		{
+			Name:        "g_clean",
+			Description: "Clean temporary download files in GVM_HOME/tmp and optionally clean Go build/module caches.",
+			InputSchema: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"cache": map[string]any{
+						"type":        "boolean",
+						"description": "Also run 'go clean -cache' on the active Go version.",
+					},
+					"modcache": map[string]any{
+						"type":        "boolean",
+						"description": "Also run 'go clean -modcache' on the active Go version.",
+					},
+				},
+			},
+		},
 	}
 }
 
@@ -369,6 +422,37 @@ func (s *Server) dispatchTool(ctx context.Context, params callToolParams) callTo
 			return textToolResult(err.Error(), true)
 		}
 		return jsonToolResult(map[string]any{"removed": removed})
+
+	case "g_unalias":
+		name := strArg("name")
+		if name == "" {
+			return textToolResult("missing required argument: name", true)
+		}
+		if err := s.mgr.Unalias(name); err != nil {
+			return textToolResult(err.Error(), true)
+		}
+		return jsonToolResult(map[string]string{"unaliased": name})
+
+	case "g_detect_project_version":
+		pv, err := goversion.DetectProjectVersion(strArg("dir"))
+		if err != nil {
+			return textToolResult(err.Error(), true)
+		}
+		return jsonToolResult(pv)
+
+	case "g_doctor":
+		checks, err := s.mgr.Doctor(ctx)
+		if err != nil {
+			return textToolResult(err.Error(), true)
+		}
+		return jsonToolResult(checks)
+
+	case "g_clean":
+		freed, err := s.mgr.Clean(ctx, boolArg("cache"), boolArg("modcache"))
+		if err != nil {
+			return textToolResult(err.Error(), true)
+		}
+		return jsonToolResult(map[string]any{"freed_bytes": freed})
 
 	default:
 		return textToolResult("unknown tool: "+params.Name, true)

@@ -5,11 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"slices"
+	"strings"
 
 	"github.com/ducconit/gvm/internal/goversion"
 	"github.com/ducconit/gvm/internal/platform"
@@ -23,6 +25,13 @@ type RemoteVersionInfo struct {
 	Installed bool     `json:"installed"`
 	Active    bool     `json:"active"`
 	Aliases   []string `json:"aliases,omitempty"`
+}
+
+// DoctorCheck represents a single diagnostic check performed by `g doctor`.
+type DoctorCheck struct {
+	Name    string `json:"name"`
+	Status  string `json:"status"` // "OK", "WARN", "FAIL"
+	Message string `json:"message"`
 }
 
 // Manager orchestrates version installation, activation, aliasing, listing, and uninstallation.
@@ -54,7 +63,21 @@ func (m *Manager) Config() platform.EnvConfig {
 	return m.store.Config()
 }
 
-// Install resolves versionSpec (alias, prefix like "1.27", "latest", or exact version),
+// resolveOrAutoDetect resolves "", "auto", or "gomod" by walking up from workDir for .go-version / go.work / go.mod.
+func (m *Manager) resolveOrAutoDetect(versionSpec string) (string, error) {
+	spec := strings.TrimSpace(versionSpec)
+	if spec == "" || strings.EqualFold(spec, "auto") || strings.EqualFold(spec, "gomod") {
+		pv, err := goversion.DetectProjectVersion("")
+		if err != nil {
+			return "", fmt.Errorf("auto-detect Go version: %w", err)
+		}
+		fmt.Fprintf(m.out, "Detected Go %s from %s\n", pv.Version, pv.SourceFile)
+		return pv.Version, nil
+	}
+	return spec, nil
+}
+
+// Install resolves versionSpec (alias, prefix like "1.27", "latest", exact version, or ""/"auto" from go.mod),
 // downloads the official archive for GOOS/GOARCH, verifies SHA256, extracts it into
 // $GVM_HOME/versions/<version>, and sets it as active if no Go version is currently active.
 func (m *Manager) Install(ctx context.Context, versionSpec string) (*store.InstalledVersion, error) {
@@ -62,13 +85,16 @@ func (m *Manager) Install(ctx context.Context, versionSpec string) (*store.Insta
 		return nil, err
 	}
 
-	expandedSpec, err := m.store.ResolveAlias(versionSpec)
+	resolvedSpec, err := m.resolveOrAutoDetect(versionSpec)
 	if err != nil {
 		return nil, err
 	}
 
-	// If an exact 3-part version (e.g. "1.27.3") is already installed locally, return it fast without network call
-	// unless the user specified a prefix ("1.27") or "latest" which requires checking remote releases.
+	expandedSpec, err := m.store.ResolveAlias(resolvedSpec)
+	if err != nil {
+		return nil, err
+	}
+
 	releases, err := m.remote.FetchReleases(ctx, true)
 	if err != nil {
 		return nil, fmt.Errorf("query official Go releases: %w", err)
@@ -131,11 +157,27 @@ func (m *Manager) Install(ctx context.Context, versionSpec string) (*store.Insta
 	}, nil
 }
 
-// Use switches the active default Go version to versionSpec (installed version, prefix, or alias).
+// Use switches the active default Go version to versionSpec (installed version, prefix, alias, or ""/"auto" from go.mod).
+// When auto-detecting from go.mod/.go-version and the target version is not yet installed, Use installs it automatically.
 func (m *Manager) Use(ctx context.Context, versionSpec string) (*store.InstalledVersion, error) {
-	resolved, err := m.store.ResolveInstalled(versionSpec)
+	isAuto := strings.TrimSpace(versionSpec) == "" || strings.EqualFold(strings.TrimSpace(versionSpec), "auto") || strings.EqualFold(strings.TrimSpace(versionSpec), "gomod")
+	resolvedSpec, err := m.resolveOrAutoDetect(versionSpec)
 	if err != nil {
-		return nil, fmt.Errorf("%w (hint: run 'g install %s' first)", err, versionSpec)
+		return nil, err
+	}
+
+	resolved, err := m.store.ResolveInstalled(resolvedSpec)
+	if err != nil {
+		if isAuto {
+			fmt.Fprintf(m.out, "Version %s is not installed locally; installing automatically...\n", resolvedSpec)
+			iv, instErr := m.Install(ctx, resolvedSpec)
+			if instErr != nil {
+				return nil, instErr
+			}
+			resolved = iv.Version
+		} else {
+			return nil, fmt.Errorf("%w (hint: run 'g install %s' first)", err, resolvedSpec)
+		}
 	}
 	if err := m.store.SetActiveVersion(resolved); err != nil {
 		return nil, err
@@ -154,6 +196,11 @@ func (m *Manager) Use(ctx context.Context, versionSpec string) (*store.Installed
 // Alias sets a named alias for a version or prefix (e.g. `g alias like 1.27`).
 func (m *Manager) Alias(name, targetSpec string) error {
 	return m.store.SetAlias(name, targetSpec)
+}
+
+// Unalias removes a named alias.
+func (m *Manager) Unalias(name string) error {
+	return m.store.RemoveAlias(name)
 }
 
 // ListLocal returns all locally installed Go versions with active status, aliases, and directory path.
@@ -176,7 +223,6 @@ func (m *Manager) ListRemote(ctx context.Context, includeUnstable bool) ([]Remot
 	}
 	aliases, _ := m.store.GetAliases()
 
-	// Sort releases ascending by semver so newest versions appear at the bottom (easy to read in terminal)
 	sorted := slices.Clone(releases)
 	slices.SortFunc(sorted, func(a, b goversion.Release) int {
 		return goversion.CompareSemver(a.Version, b.Version)
@@ -250,7 +296,6 @@ func (m *Manager) UninstallVersion(versionSpec string, allExceptActive bool) ([]
 
 	if allExceptActive {
 		active, _ := m.store.ActiveVersion()
-		// If the user also provided a specific version/alias alongside --all, keep that version or the active version
 		keepVersion := active
 		if versionSpec != "" {
 			if resolved, err := m.store.ResolveInstalled(versionSpec); err == nil {
@@ -302,7 +347,6 @@ func (m *Manager) UninstallSelf() error {
 
 	if err := os.Remove(exePath); err != nil {
 		if runtime.GOOS == "windows" {
-			// On Windows a running binary cannot be unlinked directly; rename to .old and schedule cmd deletion
 			oldPath := exePath + ".old"
 			_ = os.Remove(oldPath)
 			if renErr := os.Rename(exePath, oldPath); renErr != nil {
@@ -315,4 +359,196 @@ func (m *Manager) UninstallSelf() error {
 		return fmt.Errorf("remove CLI binary %s: %w", exePath, err)
 	}
 	return nil
+}
+
+// Exec runs a command with the environment (GOROOT and PATH) temporarily pointed at the specified Go version
+// without altering the global default version.
+func (m *Manager) Exec(ctx context.Context, versionSpec string, cmdArgs []string, in io.Reader, out, errOut io.Writer) error {
+	if len(cmdArgs) == 0 {
+		return errors.New("command to execute is required (e.g., g exec 1.27 -- go version)")
+	}
+	resolved, err := m.store.ResolveInstalled(versionSpec)
+	if err != nil {
+		return fmt.Errorf("%w (hint: run 'g install %s' first)", err, versionSpec)
+	}
+
+	cfg := m.store.Config()
+	vDir := cfg.VersionDir(resolved)
+	vBinDir := filepath.Join(vDir, "bin")
+
+	binName := cmdArgs[0]
+	if binName == "go" || binName == "gofmt" {
+		if cfg.GOOS == "windows" && !strings.HasSuffix(strings.ToLower(binName), ".exe") {
+			binName += ".exe"
+		}
+		candidate := filepath.Join(vBinDir, binName)
+		if _, err := os.Stat(candidate); err == nil {
+			binName = candidate
+		}
+	}
+
+	cmd := exec.CommandContext(ctx, binName, cmdArgs[1:]...)
+	cmd.Stdin = in
+	cmd.Stdout = out
+	cmd.Stderr = errOut
+
+	env := os.Environ()
+	newEnv := make([]string, 0, len(env)+2)
+	pathUpdated := false
+	for _, kv := range env {
+		if strings.HasPrefix(kv, "GOROOT=") {
+			continue
+		}
+		if strings.HasPrefix(strings.ToUpper(kv), "PATH=") {
+			parts := strings.SplitN(kv, "=", 2)
+			newEnv = append(newEnv, "PATH="+vBinDir+string(os.PathListSeparator)+parts[1])
+			pathUpdated = true
+			continue
+		}
+		newEnv = append(newEnv, kv)
+	}
+	if !pathUpdated {
+		newEnv = append(newEnv, "PATH="+vBinDir)
+	}
+	newEnv = append(newEnv, "GOROOT="+vDir)
+	cmd.Env = newEnv
+
+	return cmd.Run()
+}
+
+// Clean removes temporary download/extraction staging files in $GVM_HOME/tmp
+// and optionally runs `go clean -cache` and `go clean -modcache` using the active Go toolchain.
+// Returns the bytes freed in $GVM_HOME/tmp.
+func (m *Manager) Clean(ctx context.Context, goCache, modCache bool) (int64, error) {
+	cfg := m.store.Config()
+	tmpDir := cfg.TempDir()
+
+	var freedBytes int64
+	_ = filepath.WalkDir(tmpDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return nil
+		}
+		if info, infoErr := d.Info(); infoErr == nil {
+			freedBytes += info.Size()
+		}
+		return nil
+	})
+
+	if err := os.RemoveAll(tmpDir); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return freedBytes, fmt.Errorf("clean temp dir %s: %w", tmpDir, err)
+	}
+	_ = os.MkdirAll(tmpDir, 0o755)
+
+	if goCache || modCache {
+		active, _ := m.store.ActiveVersion()
+		if active != "" {
+			goBin := cfg.GoBinaryPath(cfg.VersionDir(active))
+			var args []string
+			args = append(args, "clean")
+			if goCache {
+				args = append(args, "-cache")
+			}
+			if modCache {
+				args = append(args, "-modcache")
+			}
+			cmd := exec.CommandContext(ctx, goBin, args...)
+			cmd.Stdout = m.out
+			cmd.Stderr = m.out
+			if err := cmd.Run(); err != nil {
+				return freedBytes, fmt.Errorf("run %s %v: %w", goBin, args, err)
+			}
+		}
+	}
+
+	return freedBytes, nil
+}
+
+// Doctor runs diagnostic checks on GVM_HOME, GOROOT symlink, PATH ordering, and remote API connectivity.
+func (m *Manager) Doctor(ctx context.Context) ([]DoctorCheck, error) {
+	cfg := m.store.Config()
+	var checks []DoctorCheck
+
+	// 1. Check GVM_HOME directory
+	if err := m.store.EnsureDirs(); err != nil {
+		checks = append(checks, DoctorCheck{
+			Name:    "GVM_HOME",
+			Status:  "FAIL",
+			Message: fmt.Sprintf("Cannot create or access %s: %v", cfg.GVMHome, err),
+		})
+	} else {
+		checks = append(checks, DoctorCheck{
+			Name:    "GVM_HOME",
+			Status:  "OK",
+			Message: fmt.Sprintf("Directory ready at %s", cfg.GVMHome),
+		})
+	}
+
+	// 2. Check active version & GOROOT symlink ($GVM_HOME/go)
+	active, _ := m.store.ActiveVersion()
+	if active == "" {
+		checks = append(checks, DoctorCheck{
+			Name:    "Active Go Version",
+			Status:  "WARN",
+			Message: "No active Go version selected (run 'g i latest' or 'g use <version>')",
+		})
+	} else {
+		target, err := filepath.EvalSymlinks(cfg.CurrentDir())
+		if err != nil {
+			checks = append(checks, DoctorCheck{
+				Name:    "GOROOT Symlink",
+				Status:  "WARN",
+				Message: fmt.Sprintf("Active version is %s, but %s symlink is missing (run 'g use %s')", active, cfg.CurrentDir(), active),
+			})
+		} else {
+			checks = append(checks, DoctorCheck{
+				Name:    "Active Go & GOROOT",
+				Status:  "OK",
+				Message: fmt.Sprintf("Go %s active (%s -> %s)", active, cfg.CurrentDir(), target),
+			})
+		}
+	}
+
+	// 3. Check `go` binary in PATH
+	goInPath, lookErr := exec.LookPath("go")
+	if lookErr != nil {
+		checks = append(checks, DoctorCheck{
+			Name:    "PATH Resolution",
+			Status:  "WARN",
+			Message: fmt.Sprintf("'go' binary not found in current PATH (ensure %s or ~/.local/bin is in PATH)", cfg.CurrentBinDir()),
+		})
+	} else {
+		resolvedGo, _ := filepath.EvalSymlinks(goInPath)
+		expectedGo, _ := filepath.EvalSymlinks(cfg.ActiveGoBinaryPath())
+		if active != "" && expectedGo != "" && resolvedGo != expectedGo {
+			checks = append(checks, DoctorCheck{
+				Name:    "PATH Resolution",
+				Status:  "WARN",
+				Message: fmt.Sprintf("'go' in PATH resolves to %s instead of %s (another Go installation may precede gvm in PATH)", goInPath, cfg.ActiveGoBinaryPath()),
+			})
+		} else {
+			checks = append(checks, DoctorCheck{
+				Name:    "PATH Resolution",
+				Status:  "OK",
+				Message: fmt.Sprintf("'go' resolves to %s", goInPath),
+			})
+		}
+	}
+
+	// 4. Check remote release feed reachability
+	rels, err := m.remote.FetchReleases(ctx, false)
+	if err != nil {
+		checks = append(checks, DoctorCheck{
+			Name:    "Official Release Feed",
+			Status:  "WARN",
+			Message: fmt.Sprintf("Cannot reach Go release feed: %v", err),
+		})
+	} else {
+		checks = append(checks, DoctorCheck{
+			Name:    "Official Release Feed",
+			Status:  "OK",
+			Message: fmt.Sprintf("Reachable (%d stable release series available)", len(rels)),
+		})
+	}
+
+	return checks, nil
 }

@@ -59,6 +59,16 @@ func TestStore_LifecycleAndAliases(t *testing.T) {
 		t.Fatalf("ResolveInstalled(like) = %q, err=%v", resolved, err)
 	}
 
+	if err := st.SetAlias("temp", "1.26"); err != nil {
+		t.Fatalf("SetAlias(temp): %v", err)
+	}
+	if err := st.RemoveAlias("temp"); err != nil {
+		t.Fatalf("RemoveAlias(temp): %v", err)
+	}
+	if err := st.RemoveAlias("temp"); err == nil {
+		t.Fatalf("expected error removing non-existent alias")
+	}
+
 	list, err := st.ListInstalled()
 	if err != nil || len(list) != 3 {
 		t.Fatalf("ListInstalled len=%d, err=%v", len(list), err)
